@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/server.js",
     "gate": "node src/gate.js",
+    "generate-token": "node scripts/generate-token.js",
     "test": "node --test test/catalog.test.js test/health.test.js test/search.test.js test/gate.test.js test/fulltext.test.js"
   },
   "dependencies": {

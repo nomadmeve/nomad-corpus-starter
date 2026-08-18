@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export const SCHEMA_VERSION = 'daocanon-catalog-v1';
-export const SOURCE_ID = 'daocanon';
+export const SOURCE_ID = process.env.SOURCE_ID || 'daocanon';
 
 // Deterministic bound for derived metadata fields (title, raw author).
 // Measured in Unicode code points, not UTF-16 units.

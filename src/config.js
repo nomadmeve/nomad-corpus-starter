@@ -5,6 +5,7 @@ const DEFAULTS = {
   textApiUrl: 'http://text-api:3000',
   host: '127.0.0.1',
   port: 3040,
+  sourceId: 'daocanon',
 };
 
 function parsePort(raw) {
@@ -30,9 +31,10 @@ function parseHost(raw) {
 export function loadConfig(env = process.env) {
   const textApiUrl = parseTextApiUrl(env.DAO_CANON_TEXT_API_URL);
   return {
-    daoCanonRoot: env.DAO_CANON_ROOT || DEFAULTS.daoCanonRoot,
+    daoCanonRoot: env.CORPUS_ROOT || env.DAO_CANON_ROOT || DEFAULTS.daoCanonRoot,
     textApiUrl,
     host: parseHost(env.HOST),
     port: parsePort(env.PORT),
+    sourceId: env.SOURCE_ID || DEFAULTS.sourceId,
   };
 }

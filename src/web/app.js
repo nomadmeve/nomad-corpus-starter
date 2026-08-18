@@ -243,7 +243,7 @@ function isNonNegativeInteger(value) {
 
 function validLocator(locator) {
   if (!locator || typeof locator !== 'object'
-    || locator.source_id !== 'daocanon'
+    || typeof locator.source_id !== 'string' || locator.source_id.length === 0
     || typeof locator.relative_path !== 'string') return false;
   const noLines = locator.line_start === null && locator.line_end === null;
   const physicalLines = Number.isInteger(locator.line_start)
@@ -257,7 +257,7 @@ function validLocator(locator) {
 function validCatalogRecord(record) {
   return record
     && typeof record === 'object'
-    && record.source_id === 'daocanon'
+    && typeof record.source_id === 'string' && record.source_id.length > 0
     && WORK_ID_PATTERN.test(record.work_id)
     && typeof record.title === 'string'
     && isNullableString(record.author)
@@ -269,7 +269,7 @@ function validCatalogRecord(record) {
 
 function validSearchHit(hit, mode) {
   if (!hit || typeof hit !== 'object') return false;
-  if (hit.source_id !== 'daocanon'
+  if (typeof hit.source_id !== 'string' || hit.source_id.length === 0
     || !WORK_ID_PATTERN.test(hit.work_id)
     || typeof hit.title !== 'string') return false;
   if (!isNullableString(hit.author) || !isNullableString(hit.division)) return false;
@@ -316,7 +316,7 @@ export function validateWorkEnvelope(body) {
   const passage = body?.data?.passage;
   const meta = body?.meta;
   const validWork = validCatalogRecord(work)
-    && work.source_id === 'daocanon'
+    && typeof work.source_id === 'string' && work.source_id.length > 0
     && WORK_ID_PATTERN.test(work.work_id);
   const validLines = Array.isArray(passage?.lines)
     && passage.lines.length > 0

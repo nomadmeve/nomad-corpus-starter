@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+node_modules
+coverage
+dist
+.tmp
+*.log
+docs
+ops
+test
+AGENTS.md
+QWEN.md
+README.md

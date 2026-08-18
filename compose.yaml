@@ -1,0 +1,48 @@
+name: nomad-corpus-starter
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nomad-corpus-api:local
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3040
+      DAO_CANON_ROOT: /corpus
+    ports:
+      - "127.0.0.1:3040:3040"
+    volumes:
+      - type: bind
+        source: ${DAO_CANON_HOST_ROOT:-./sample-corpus}
+        target: /corpus
+        read_only: true
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    stop_grace_period: 5s
+
+  gate:
+    image: nomad-corpus-api:local
+    depends_on:
+      api:
+        condition: service_started
+    command: ["node", "src/gate.js"]
+    network_mode: host
+    environment:
+      HOST: 127.0.0.1
+      PORT: 3080
+      DAO_CANON_GATE_UPSTREAM: http://127.0.0.1:3040
+      DAO_CANON_GATE_TOKEN: ${DAO_CANON_GATE_TOKEN:-default_dev_token}
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    stop_grace_period: 5s

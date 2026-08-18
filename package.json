@@ -1,0 +1,19 @@
+{
+  "name": "nomad-corpus-starter",
+  "version": "1.0.0",
+  "description": "Nomad Corpus Platform Starter Kit - Standalone Fast Markdown Corpus Server",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "gate": "node src/gate.js",
+    "test": "node --test test/catalog.test.js test/health.test.js test/search.test.js test/gate.test.js test/fulltext.test.js"
+  },
+  "dependencies": {
+    "opencc-js": "^1.0.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT"
+}

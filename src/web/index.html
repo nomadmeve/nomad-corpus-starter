@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ko" data-app="daocanon-search">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>DaoCanon Search</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/evidence-workspace.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">道</span>
+      <span>
+        <strong>DaoCanon Search</strong>
+        <small>도장 원문을 근거 위치와 함께 찾습니다</small>
+      </span>
+    </div>
+    <nav class="global-nav" aria-label="주요 서비스">
+      <a href="/" aria-current="page">DaoCanon Search</a>
+      <a href="/research/">Research Library</a>
+    </nav>
+    <div class="stage3-controls" role="group" aria-label="근거 선반과 연구 대화">
+      <button id="evidence-shelf-toggle" class="stage3-button" type="button"
+        aria-haspopup="true" aria-expanded="false" aria-controls="evidence-shelf-menu">근거 선반 0</button>
+      <button id="dialogue-toggle" class="stage3-button" type="button"
+        aria-haspopup="dialog" aria-expanded="false" aria-controls="dialogue-panel">연구 대화</button>
+    </div>
+    <div id="api-status" class="api-status" role="status" aria-live="polite" hidden>
+      <span class="status-dot" aria-hidden="true"></span>
+      <span id="api-status-text"></span>
+    </div>
+  </header>
+
+  <section id="evidence-shelf-menu" class="shelf-menu" aria-label="근거 선반" hidden>
+    <header class="shelf-menu-heading">
+      <div>
+        <p class="eyebrow">EVIDENCE SHELF</p>
+        <h2 id="shelf-heading">근거 선반</h2>
+      </div>
+      <span id="shelf-total" class="count-badge">0건</span>
+    </header>
+    <p id="shelf-empty" class="shelf-empty">선반이 비어 있습니다. 원문·사전·연구서에서 근거를 담아주세요.</p>
+    <ul id="shelf-list" class="shelf-list" aria-label="담은 근거 목록"></ul>
+    <footer class="shelf-menu-actions">
+      <button id="shelf-clear" class="secondary-button" type="button" disabled>비우기</button>
+      <button id="shelf-chat" class="primary-button" type="button" disabled>선택 근거로 대화</button>
+    </footer>
+  </section>
+
+  <main class="shell">
+    <section id="search-surface" class="search-card" aria-labelledby="search-heading">
+      <div class="search-heading-row">
+        <div>
+          <p class="eyebrow">READ-ONLY CORPUS</p>
+          <h1 id="search-heading">경전의 이름과 흔적을 찾습니다</h1>
+        </div>
+        <p class="scope-note">간체·번체는 입력한 글자 그대로 검색합니다.</p>
+      </div>
+
+      <div class="modes" role="tablist" aria-label="검색 방식">
+        <button id="tab-browse" class="mode-tab active" type="button" role="tab"
+          aria-selected="true" aria-controls="workspace" tabindex="0" data-mode="browse">부별 목록</button>
+        <button id="tab-title" class="mode-tab" type="button" role="tab"
+          aria-selected="false" aria-controls="workspace" tabindex="-1" data-mode="title">경전명</button>
+        <button id="tab-author" class="mode-tab" type="button" role="tab"
+          aria-selected="false" aria-controls="workspace" tabindex="-1" data-mode="author">저자</button>
+        <button id="tab-fulltext" class="mode-tab" type="button" role="tab"
+          aria-selected="false" aria-controls="workspace" tabindex="-1" data-mode="fulltext">전문</button>
+      </div>
+
+      <form id="search-form" class="search-form" hidden>
+        <label id="query-label" for="query-input">검색어</label>
+        <input id="query-input" name="q" type="search" maxlength="100" autocomplete="off"
+          placeholder="검색어를 입력하세요" required>
+        <button id="search-submit" class="primary-button" type="submit">검색</button>
+        <span id="draft-status" class="draft-status" role="status" aria-live="polite" hidden></span>
+      </form>
+
+      <div id="search-hints" class="hints" aria-label="검색 예시">
+        <span>목록에서 부를 선택하거나 검색 방식을 바꾸세요.</span>
+        <button type="button" class="hint-button" data-example="参同契" data-example-mode="title">경전명 参同契</button>
+        <button type="button" class="hint-button" data-example="彭晓" data-example-mode="author">저자 彭晓</button>
+        <button type="button" class="hint-button" data-example="黄庭内景经" data-example-mode="fulltext">전문 黄庭内景经</button>
+      </div>
+    </section>
+
+    <section id="workspace" class="workspace" role="tabpanel" aria-labelledby="tab-browse" tabindex="0">
+      <div id="workspace-layout" class="workspace-layout">
+        <aside id="division-panel" class="panel division-panel" aria-labelledby="division-heading">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">DIVISION</p>
+              <h2 id="division-heading">부별 목록</h2>
+            </div>
+          </div>
+          <nav id="division-list" class="division-list" aria-label="도장 부 목록"></nav>
+        </aside>
+
+        <section class="panel results-panel" aria-labelledby="results-heading">
+          <div class="panel-heading result-heading">
+            <div>
+              <p class="eyebrow" id="result-kicker">CATALOG</p>
+              <h2 id="results-heading">전체 경전</h2>
+            </div>
+            <span id="result-count" class="count-badge">불러오는 중</span>
+          </div>
+          <div id="message" class="message" role="status" aria-live="polite">목록을 불러오고 있습니다.</div>
+          <div id="results" class="results" aria-label="검색 결과"></div>
+          <nav class="pagination" aria-label="결과 페이지">
+            <button id="previous-page" class="secondary-button" type="button" disabled>이전</button>
+            <span id="page-summary" aria-live="polite">—</span>
+            <button id="next-page" class="secondary-button" type="button" disabled>다음</button>
+          </nav>
+        </section>
+
+        <aside id="detail" class="panel detail-panel" aria-labelledby="detail-heading">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">LOCATOR</p>
+              <h2 id="detail-heading">근거 위치</h2>
+            </div>
+          </div>
+          <div id="detail-content" class="detail-content">
+            <p class="empty-detail">목록에서 경전을 선택하면 API가 제공한 서지와 상대 경로를 확인할 수 있습니다.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="reader-view" class="reader-view panel" aria-labelledby="reader-heading" hidden>
+      <nav class="reader-toolbar" aria-label="경전 읽기 탐색">
+        <button id="reader-back" class="secondary-button" type="button">← 검색 결과로 돌아가기</button>
+        <span id="reader-range" class="count-badge">—</span>
+        <span class="reader-stage3-actions">
+          <button id="reader-add-evidence" class="secondary-button" type="button" title="지금 보이는 구간(~100행)을 선반에 담습니다">이 구간 담기</button>
+          <button id="reader-add-full" class="secondary-button" type="button" title="전체 원문 참조를 선반에 담고, 질문 때 필요한 구간을 다시 검증합니다">전체 원문 참조 담기</button>
+          <button id="reader-ask" class="primary-button" type="button">이 근거로 묻기</button>
+        </span>
+      </nav>
+      <header class="reader-header">
+        <p class="eyebrow">SOURCE READER</p>
+        <h1 id="reader-heading" tabindex="-1">경전 원문</h1>
+        <dl id="reader-meta" class="reader-meta"></dl>
+      </header>
+      <div id="reader-status" class="message" role="status" aria-live="polite">경전을 불러올 준비가 됐습니다.</div>
+      <ol id="reader-lines" class="reader-lines" aria-label="경전 물리 행"></ol>
+      <nav class="reader-pagination" aria-label="경전 구간 이동">
+        <button id="reader-previous" class="secondary-button" type="button" disabled>이전 구간</button>
+        <div id="reader-page-list" class="reader-page-list" role="navigation" aria-label="원문 구간 번호"></div>
+        <button id="reader-next" class="secondary-button" type="button" disabled>다음 구간</button>
+      </nav>
+      <section id="reader-convert" class="reader-tools" aria-labelledby="reader-convert-heading">
+        <header class="reader-tools-heading">
+          <p class="eyebrow">CJK CONVERT</p>
+          <h2 id="reader-convert-heading">원문/간체/번체 보기</h2>
+          <p class="scope-note">이 도구는 읽기 화면의 행 텍스트만 변환합니다. 행 번호·URL·근거 위치는 보존됩니다.</p>
+        </header>
+        <div class="reader-convert-controls" role="radiogroup" aria-label="표시 글자 형태">
+          <button id="reader-convert-original" class="secondary-button reader-convert-button" type="button"
+            role="radio" aria-checked="true" data-convert="original" data-direction="original">원문</button>
+          <button id="reader-convert-s2t" class="secondary-button reader-convert-button" type="button"
+            role="radio" aria-checked="false" data-convert="s2t" data-direction="s2t">번체</button>
+          <button id="reader-convert-t2s" class="secondary-button reader-convert-button" type="button"
+            role="radio" aria-checked="false" data-convert="t2s" data-direction="t2s">간체</button>
+        </div>
+        <p id="reader-convert-status" class="message" role="status" aria-live="polite" hidden>원문 그대로 표시 중입니다.</p>
+      </section>
+      <section id="reader-translate" class="reader-tools" aria-labelledby="reader-translate-heading">
+        <header class="reader-tools-heading">
+          <p class="eyebrow">LOCAL TRANSLATE</p>
+          <h2 id="reader-translate-heading">한국어 번역 패널</h2>
+          <p class="scope-note">읽기 화면 밖의 텍스트를 붙여 넣어 한 번에 번역합니다. 본문·로케이터·근거는 저장되지 않습니다.</p>
+        </header>
+        <label id="reader-translate-text-label" for="reader-translate-text">번역할 본문</label>
+        <textarea id="reader-translate-text" class="reader-translate-textarea" rows="4" maxlength="4000"
+          aria-describedby="reader-translate-text-hint"
+          placeholder="번역할 중국어 본문을 붙여 넣으세요 (간체·번체 모두 지원)"></textarea>
+        <p id="reader-translate-text-hint" class="scope-note">최대 4,000자. 번역은 클릭 시점에 한 번만 실행됩니다.</p>
+        <div class="reader-translate-controls">
+          <label id="reader-translate-model-label" for="reader-translate-model">모델</label>
+          <select id="reader-translate-model" class="reader-translate-model" aria-labelledby="reader-translate-model-label">
+            <option value="gemma4:12b" selected>gemma4:12b</option>
+            <option value="gemma4:26b">gemma4:26b</option>
+          </select>
+          <fieldset class="reader-translate-source" role="radiogroup" aria-labelledby="reader-translate-source-label">
+            <legend id="reader-translate-source-label">원문 종류</legend>
+            <label><input type="radio" name="reader-translate-source" value="classical_zh" checked> 고문 (한문)</label>
+            <label><input type="radio" name="reader-translate-source" value="zh"> 현대 중국어</label>
+          </fieldset>
+          <button id="reader-translate-submit" class="primary-button" type="button">한국어로 번역</button>
+        </div>
+        <p id="reader-translate-status" class="message" role="status" aria-live="polite" hidden></p>
+        <div id="reader-translate-output" class="reader-translate-output" role="region"
+          aria-labelledby="reader-translate-heading" aria-live="polite" hidden></div>
+      </section>
+    </section>
+
+    <section id="dialogue-panel" class="dialogue-panel" aria-labelledby="dialogue-heading" hidden>
+      <header class="dialogue-heading">
+        <div class="dialogue-title-row">
+          <h2 id="dialogue-heading">연구 대화</h2>
+          <span class="dialogue-mode-badge" aria-label="대화 모드">선택 근거</span>
+        </div>
+        <div class="dialogue-heading-actions">
+          <button id="dialogue-new" class="secondary-button" type="button">새 대화</button>
+          <button id="dialogue-close" class="secondary-button" type="button" aria-label="연구 대화 닫기">닫기</button>
+        </div>
+      </header>
+      <div id="dialogue-tabs" class="stageb-tabs" role="tablist" aria-label="대화 모드">
+        <button id="dialogue-tab-3a" class="stageb-tab" type="button" role="tab"
+          aria-selected="true" aria-controls="dialogue-panel-3a" aria-label="연구 대화 탭" data-stageb-tab="3a">연구 대화</button>
+        <button id="dialogue-tab-b" class="stageb-tab" type="button" role="tab"
+          aria-selected="false" aria-controls="dialogue-panel-b" aria-label="확장 대화 탭" data-stageb-tab="b"
+          disabled aria-disabled="true">확장 대화</button>
+      </div>
+
+      <div id="dialogue-panel-3a" class="stageb-tabpanel" role="tabpanel" aria-labelledby="dialogue-tab-3a">
+        <div id="dialogue-context-list" class="dialogue-context-list" aria-label="현재 선택 근거"></div>
+        <div id="dialogue-messages" class="dialogue-messages" aria-live="polite" aria-label="연구 대화 기록"></div>
+        <p id="dialogue-status" class="message" role="status" aria-live="polite" hidden></p>
+        <div class="dialogue-form">
+          <label id="dialogue-question-label" class="visually-hidden" for="dialogue-question">질문</label>
+          <textarea id="dialogue-question" rows="2" maxlength="8000" placeholder="선반의 근거를 바탕으로 질문하세요" aria-label="질문"></textarea>
+          <div class="dialogue-composer-actions">
+            <label class="dialogue-model-label" for="dialogue-model">모델</label>
+            <select id="dialogue-model" class="dialogue-model-select" aria-label="Local LLM 모델">
+              <option value="qwen3.6:35b" selected>qwen3.6:35b (기본)</option>
+              <option value="gemma4:26b">gemma4:26b</option>
+              <option value="nemotron-3.5-lightning:latest">nemotron-3.5-lightning:latest</option>
+            </select>
+            <span id="dialogue-limit" class="count-badge" aria-live="polite"></span>
+            <button id="dialogue-transfer-context" class="secondary-button" type="button" disabled>현재 문맥 전달</button>
+            <button id="dialogue-send" class="primary-button" type="button" disabled>전송</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="dialogue-panel-b" class="stageb-tabpanel stageb-panel" role="tabpanel" aria-labelledby="dialogue-tab-b" hidden>
+        <div class="stageb-header">
+          <span id="stageb-health" class="stageb-health" role="status" aria-live="polite"></span>
+          <button id="stageb-new" class="secondary-button" type="button">새 대화</button>
+        </div>
+        <p id="stageb-unavailable" class="stageb-unavailable" hidden>확장 대화 서비스를 사용할 수 없습니다.</p>
+        <p id="stageb-status" class="stageb-status" role="status" aria-live="polite" hidden></p>
+        <div id="stageb-sources" class="stageb-sources" aria-label="전달 근거"></div>
+        <div id="stageb-answer" class="stageb-answer" aria-live="polite"></div>
+        <div id="stageb-ledger" class="stageb-ledger" aria-label="확장 대화 작업 기록"></div>
+        <div id="stageb-artifacts" class="stageb-artifacts" aria-label="확장 대화 산출물"></div>
+        <div id="stageb-preview" class="stageb-preview" hidden></div>
+        <div class="stageb-form">
+          <label id="stageb-question-label" class="visually-hidden" for="stageb-question">확장 질문</label>
+          <textarea id="stageb-question" rows="2" maxlength="8000" placeholder="확장 대화 질문" aria-label="확장 질문"></textarea>
+          <div class="stageb-composer-actions">
+            <label class="stageb-model-label" for="stageb-model">모델</label>
+            <select id="stageb-model" class="stageb-model-select" aria-label="확장 대화 모델" disabled>
+              <option value="">모델 목록을 불러오는 중…</option>
+            </select>
+            <button id="stageb-attach" class="secondary-button" type="button" disabled>산출물 첨부</button>
+            <button id="stageb-send" class="primary-button" type="button" disabled>요청</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      DaoCanon corpus read-only interface · 모든 결과는 상대 경로로, 전문 결과는 물리 행 위치로 되짚을 수 있습니다.
+    </footer>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
